@@ -17,6 +17,13 @@ from graph_rules import TransactionGraphAnalyzer
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
+# Helper function to wrap responses in standard ApiResponse format
+def api_response(data=None, error=None, status_code=200):
+    """Wrap response in standard {success, data, error} format"""
+    if error:
+        return jsonify({'success': False, 'error': error}), status_code
+    return jsonify({'success': True, 'data': data}), status_code
+
 # Global instances
 detector = MoneyMulingDetector()
 scorer = SuspiciousActivityScorer()
@@ -34,15 +41,16 @@ def upload_transactions():
     """Upload and process transaction data"""
     try:
         if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
+            return api_response(error='No file provided', status_code=400)
 
         file = request.files['file']
 
         if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+            return api_response(error='No file selected', status_code=400)
 
         # Read CSV file
         df = pd.read_csv(file)
+        print(f"[DEBUG] CSV columns: {list(df.columns)}")
 
         # Validate required columns. Accept the new input spec with
         # `sender_id` / `receiver_id` but support the older `from_account` / `to_account` as well.
@@ -50,25 +58,29 @@ def upload_transactions():
         expected_old = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
 
         if all(col in df.columns for col in expected_new):
+            print("[DEBUG] Found NEW headers - mapping to internal format")
             # Map to internal column names used by detector
             df = df.rename(columns={'sender_id': 'from_account', 'receiver_id': 'to_account'})
         elif all(col in df.columns for col in expected_old):
+            print("[DEBUG] Found OLD headers - already in internal format")
             # already in expected internal format
             pass
         else:
             # Report which required columns are missing for the NEW spec
             missing = [col for col in expected_new if col not in df.columns]
-            return jsonify({
-                'error': f'Missing required columns for input spec: {missing}',
-                'required_columns': expected_new
-            }), 400
+            print(f"[DEBUG] Missing columns for new spec: {missing}")
+            return api_response(
+                error=f'Missing required columns for input spec: {missing}. Required columns: {expected_new}',
+                status_code=400
+            )
 
         # Convert timestamp to datetime using strict format YYYY-MM-DD HH:MM:SS
         df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         if df['timestamp'].isna().any():
-            return jsonify({
-                'error': 'One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS',
-            }), 400
+            return api_response(
+                error='One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS',
+                status_code=400
+            )
 
         # Load data into detector (detector expects columns 'from_account' and 'to_account')
         detector.load_transactions(df)
@@ -77,7 +89,7 @@ def upload_transactions():
         global analyzer
         analyzer = TransactionGraphAnalyzer(detector)
 
-        return jsonify({
+        return api_response(data={
             'message': 'Transaction data loaded successfully',
             'num_transactions': len(df),
             'num_accounts': len(set(df['from_account']).union(set(df['to_account']))),
@@ -85,10 +97,10 @@ def upload_transactions():
                 'start': df['timestamp'].min().isoformat(),
                 'end': df['timestamp'].max().isoformat()
             }
-        })
+        }, status_code=200)
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/run-detection', methods=['POST'])
 def run_detection():
@@ -97,7 +109,7 @@ def run_detection():
         global last_detection_results, processing_start_time
 
         if detector.transactions is None:
-            return jsonify({'error': 'No transaction data loaded. Please upload data first.'}), 400
+            return api_response(error='No transaction data loaded. Please upload data first.', status_code=400)
 
         processing_start_time = time.time()
 
@@ -115,7 +127,7 @@ def run_detection():
         processing_time = time.time() - processing_start_time
         fraud_ring_output['summary']['processing_time_seconds'] = round(processing_time, 2)
 
-        return jsonify({
+        return api_response(data={
             'detection_results': detection_results,
             'scoring_report': scoring_report,
             'fraud_ring_output': fraud_ring_output,
@@ -123,31 +135,31 @@ def run_detection():
         })
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/graph-metrics', methods=['GET'])
 def get_graph_metrics():
     """Get graph analysis metrics"""
     try:
         if analyzer is None:
-            return jsonify({'error': 'No data loaded. Please upload transactions first.'}), 400
+            return api_response(error='No data loaded. Please upload transactions first.', status_code=400)
 
         metrics = analyzer.analyze_graph_metrics()
 
-        return jsonify({
+        return api_response(data={
             'metrics': metrics,
             'timestamp': datetime.now().isoformat()
         })
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/visualizations/network', methods=['GET'])
 def get_network_visualization():
     """Get enhanced network visualization data"""
     try:
         if analyzer is None or detector.transactions is None:
-            return jsonify({'error': 'No data loaded. Please upload transactions and run detection first.'}), 400
+            return api_response(error='No data loaded. Please upload transactions and run detection first.', status_code=400)
 
         # Get latest detection results
         if last_detection_results is None:
@@ -161,20 +173,20 @@ def get_network_visualization():
             rings=detection_results.get('rings', {})
         )
 
-        return jsonify({
+        return api_response(data={
             'plotly_data': fig.to_dict(),
             'timestamp': datetime.now().isoformat()
         })
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/visualizations/risk-distribution', methods=['GET'])
 def get_risk_distribution():
     """Get risk distribution visualization"""
     try:
         if detector.transactions is None:
-            return jsonify({'error': 'No data loaded. Please upload transactions first.'}), 400
+            return api_response(error='No data loaded. Please upload transactions first.', status_code=400)
 
         if last_detection_results is None:
             detection_results = detector.run_full_detection()
@@ -186,32 +198,32 @@ def get_risk_distribution():
 
         fig = analyzer.create_risk_distribution_chart(fraud_ring_output)
 
-        return jsonify({
+        return api_response(data={
             'plotly_data': fig.to_dict(),
             'timestamp': datetime.now().isoformat()
         })
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/fraud-rings', methods=['GET'])
 def get_fraud_rings():
     """Get fraud ring summary data"""
     try:
         if detector.transactions is None or last_detection_results is None:
-            return jsonify({'error': 'No detection results available.'}), 400
+            return api_response(error='No detection results available.', status_code=400)
 
         detection_results = last_detection_results
         scoring_report = scorer.generate_overall_report(detection_results)
         fraud_ring_output = scorer.generate_fraud_ring_output(detection_results, scoring_report)
 
-        return jsonify({
+        return api_response(data={
             'fraud_rings': fraud_ring_output['fraud_rings'],
             'timestamp': datetime.now().isoformat()
         })
 
     except Exception as e:
-        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+        return api_response(error=str(e), status_code=500)
 
 @app.route('/api/download-fraud-report', methods=['GET'])
 def download_fraud_report():
@@ -351,11 +363,11 @@ def analyze_csv():
     try:
         # Step 1: Upload and validate CSV
         if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
+            return api_response(error='No file provided', status_code=400)
 
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+            return api_response(error='No file selected', status_code=400)
 
         # Read and validate CSV. Accept new input spec (sender_id/receiver_id) or old (from_account/to_account)
         df = pd.read_csv(file)
@@ -368,16 +380,18 @@ def analyze_csv():
             pass
         else:
             missing = [col for col in expected_new if col not in df.columns]
-            return jsonify({
-                'success': False,
-                'error': f'Missing required columns for input spec: {missing}',
-                'required_columns': expected_new
-            }), 400
+            return api_response(
+                error=f'Missing required columns for input spec: {missing}. Required columns: {expected_new}',
+                status_code=400
+            )
 
         # Convert timestamp using strict format
         df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         if df['timestamp'].isna().any():
-            return jsonify({'success': False, 'error': 'One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS'}), 400
+            return api_response(
+                error='One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS',
+                status_code=400
+            )
 
         # Step 2: Load data and run detection
         detector.load_transactions(df)
