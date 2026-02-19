@@ -198,6 +198,10 @@ A web-based Financial Forensics Engine designed to detect money muling networks 
 The application follows a client-side architecture for maximum performance and security:
 
 1. **Data Ingestion**: `PapaParse` reads CSV files into memory.
+
+---
+
+© 2026 BugbyteY. This project is provided for educational use only and is not intended for professional or production use.
 2. **Graph Construction**: `GraphBuilder` converts flat transactions into an in-memory graph (Nodes & Links).
 3. **Pattern Detection**: `PatternDetector` runs algorithms:
    - _Cycle Detection_: Depth-First Search (DFS) with depth limit 5. `O(V * D)`

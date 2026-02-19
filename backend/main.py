@@ -44,20 +44,33 @@ def upload_transactions():
         # Read CSV file
         df = pd.read_csv(file)
 
-        # Validate required columns
-        required_columns = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
-        missing_columns = [col for col in required_columns if col not in df.columns]
+        # Validate required columns. Accept the new input spec with
+        # `sender_id` / `receiver_id` but support the older `from_account` / `to_account` as well.
+        expected_new = ['transaction_id', 'sender_id', 'receiver_id', 'amount', 'timestamp']
+        expected_old = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
 
-        if missing_columns:
+        if all(col in df.columns for col in expected_new):
+            # Map to internal column names used by detector
+            df = df.rename(columns={'sender_id': 'from_account', 'receiver_id': 'to_account'})
+        elif all(col in df.columns for col in expected_old):
+            # already in expected internal format
+            pass
+        else:
+            # Report which required columns are missing for the NEW spec
+            missing = [col for col in expected_new if col not in df.columns]
             return jsonify({
-                'error': f'Missing required columns: {missing_columns}',
-                'required_columns': required_columns
+                'error': f'Missing required columns for input spec: {missing}',
+                'required_columns': expected_new
             }), 400
 
-        # Convert timestamp to datetime
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # Convert timestamp to datetime using strict format YYYY-MM-DD HH:MM:SS
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+        if df['timestamp'].isna().any():
+            return jsonify({
+                'error': 'One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS',
+            }), 400
 
-        # Load data into detector
+        # Load data into detector (detector expects columns 'from_account' and 'to_account')
         detector.load_transactions(df)
 
         # Update analyzer
@@ -344,19 +357,27 @@ def analyze_csv():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
 
-        # Read and validate CSV
+        # Read and validate CSV. Accept new input spec (sender_id/receiver_id) or old (from_account/to_account)
         df = pd.read_csv(file)
-        required_columns = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
-        missing_columns = [col for col in required_columns if col not in df.columns]
+        expected_new = ['transaction_id', 'sender_id', 'receiver_id', 'amount', 'timestamp']
+        expected_old = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
 
-        if missing_columns:
+        if all(col in df.columns for col in expected_new):
+            df = df.rename(columns={'sender_id': 'from_account', 'receiver_id': 'to_account'})
+        elif all(col in df.columns for col in expected_old):
+            pass
+        else:
+            missing = [col for col in expected_new if col not in df.columns]
             return jsonify({
-                'error': f'Missing required columns: {missing_columns}',
-                'required_columns': required_columns
+                'success': False,
+                'error': f'Missing required columns for input spec: {missing}',
+                'required_columns': expected_new
             }), 400
 
-        # Convert timestamp
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # Convert timestamp using strict format
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+        if df['timestamp'].isna().any():
+            return jsonify({'success': False, 'error': 'One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS'}), 400
 
         # Step 2: Load data and run detection
         detector.load_transactions(df)
