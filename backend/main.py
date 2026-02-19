@@ -97,7 +97,7 @@ def upload_transactions():
         global analyzer
         analyzer = TransactionGraphAnalyzer(detector)
 
-        return api_response(data={
+        response_data = {
             'message': 'Transaction data loaded successfully',
             'num_transactions': len(df),
             'num_accounts': len(set(df['from_account']).union(set(df['to_account']))),
@@ -105,7 +105,9 @@ def upload_transactions():
                 'start': df['timestamp'].min().isoformat(),
                 'end': df['timestamp'].max().isoformat()
             }
-        }, status_code=200)
+        }
+        print(f"[UPLOAD] Loaded {len(df)} transactions, {response_data['num_accounts']} accounts")
+        return api_response(data=response_data, status_code=200)
 
     except Exception as e:
         return api_response(error=str(e), status_code=500)
@@ -130,6 +132,9 @@ def run_detection():
 
         # Generate fraud ring output
         fraud_ring_output = scorer.generate_fraud_ring_output(detection_results, scoring_report)
+        
+        print(f"[DETECTION] Found {len(fraud_ring_output.get('fraud_rings', []))} fraud rings")
+        print(f"[DETECTION] Found {len(fraud_ring_output.get('suspicious_accounts', []))} suspicious accounts")
         
         # Update processing time
         processing_time = time.time() - processing_start_time
