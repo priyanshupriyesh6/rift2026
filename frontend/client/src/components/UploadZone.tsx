@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import { Upload, AlertCircle, Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 export const UploadZone: React.FC = () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import { motion } from 'framer-motion';
 import { ShieldAlert } from 'lucide-react';
 

@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { useAppStore } from '../store';
-import { useResizeObserver } from '../hooks/useResizeObserver';
+import { useAppStore } from '@/store';
+import { useResizeObserver } from '@/hooks/useResizeObserver';
 
 export const GraphViz: React.FC = () => {
     const { graphData, analysisResult } = useAppStore();

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { AnalysisResult, GraphData, SuspiciousAccount } from '../types';
-import { apiService } from '../lib/api';
+import type { AnalysisResult, GraphData, SuspiciousAccount } from '@/types';
+import { apiService } from '@/lib/api';
 
 interface AppState {
     isAnalyzing: boolean;
@@ -52,7 +52,7 @@ export const useAppStore = create<AppState>((set) => ({
             }
 
             // Transform backend data to match frontend types
-            const fraudRings = fraudRingsResponse.data!.fraud_rings.map(ring => ({
+            const fraudRings = fraudRingsResponse.data!.fraud_rings.map((ring: any) => ({
                 ringId: ring.ring_id,
                 memberAccounts: ring.member_accounts,
                 patternType: ring.pattern_type as any,
