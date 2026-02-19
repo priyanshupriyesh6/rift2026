@@ -14,6 +14,10 @@ from detector import MoneyMulingDetector
 from scoring import SuspiciousActivityScorer
 from graph_rules import TransactionGraphAnalyzer
 
+print("\n" + "="*60)
+print("MODULE MAIN.PY LOADED - timestamp:", datetime.now().isoformat())
+print("="*60 + "\n")
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
