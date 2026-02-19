@@ -1,6 +1,6 @@
 import { UploadZone } from './components/UploadZone'
 import { Dashboard } from './components/Dashboard'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index.ts'
 import { Activity } from 'lucide-react'
 
 function App() {

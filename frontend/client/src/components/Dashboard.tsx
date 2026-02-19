@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppStore } from '@/store';
+import { useAppStore } from '@/store/index.ts';
 import { GraphViz } from './GraphViz';
 import { RingTable } from './RingTable';
 import { SuspiciousList } from './SuspiciousList';

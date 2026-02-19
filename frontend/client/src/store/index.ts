@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { AnalysisResult, GraphData, SuspiciousAccount } from '@/types';
-import { apiService } from '@/lib/api';
+import type { AnalysisResult, GraphData, SuspiciousAccount } from '@/types/index.ts';
+import { apiService } from '@/lib/api.ts';
 
 interface AppState {
     isAnalyzing: boolean;
