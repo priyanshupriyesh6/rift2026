@@ -24,7 +24,8 @@ This web-based application provides an end-to-end solution for detecting money m
 3. Set the **Root Directory** to `backend`
 4. Set **Build Command** to `pip install -r requirements.txt`
 5. Set **Start Command** to `gunicorn --bind 0.0.0.0:$PORT main:app`
-6. Deploy the service
+6. **Important**: The `backend/runtime.txt` file specifies Python 3.12.0 to ensure compatibility with pandas (Python 3.14 has compatibility issues)
+7. Deploy the service
 
 ### Frontend Deployment
 
