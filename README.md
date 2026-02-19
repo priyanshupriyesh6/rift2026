@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+
 # Money Muling Detection Engine
 
 ## Problem Statement
@@ -17,6 +18,7 @@ This web-based application provides an end-to-end solution for detecting money m
 ## Deployment on Render
 
 ### Backend Deployment
+
 1. Create a new **Web Service** on Render
 2. Connect your GitHub repository
 3. Set the **Root Directory** to `backend`
@@ -25,6 +27,7 @@ This web-based application provides an end-to-end solution for detecting money m
 6. Deploy the service
 
 ### Frontend Deployment
+
 1. Create a new **Static Site** on Render
 2. Connect your GitHub repository
 3. Set the **Root Directory** to `frontend/client`
@@ -34,24 +37,28 @@ This web-based application provides an end-to-end solution for detecting money m
 7. Deploy the static site
 
 ### Connecting Frontend to Backend
+
 - After deploying both services, update the frontend's `VITE_API_URL` environment variable with your backend's Render URL
 - Redeploy the frontend to apply the changes
 
 ## Architecture
 
 ### Frontend (React)
+
 - **Framework**: React 18.2 with functional components
 - **Visualization**: Vis.js network graphs with deterministic layouts
 - **Styling**: Plain CSS with responsive design
 - **State Management**: React hooks for simple, predictable state
 
 ### Backend (Python/Flask)
+
 - **Framework**: Flask 2.3.3 with CORS support
 - **Graph Analysis**: NetworkX for transaction network modeling
 - **Data Processing**: Pandas for efficient CSV handling
 - **Detection Engine**: Custom algorithms for pattern recognition
 
 ### Detection Pipeline
+
 1. **Data Ingestion**: CSV upload with validation
 2. **Graph Construction**: Transaction-to-account relationships
 3. **Pattern Detection**: Parallel execution of detection algorithms
@@ -61,16 +68,19 @@ This web-based application provides an end-to-end solution for detecting money m
 ## Detection Rules
 
 ### 1. Circular Fund Routing
+
 - **Pattern**: Closed transaction loops (A→B→C→A)
 - **Logic**: NetworkX cycle detection with size constraints
 - **Indicators**: Transaction frequency, amount consistency, time windows
 
 ### 2. Smurfing (Structuring)
+
 - **Pattern**: Large amounts split into smaller transactions
 - **Logic**: Hourly aggregation with statistical analysis
 - **Indicators**: Amount distribution uniformity, threshold avoidance
 
 ### 3. Layered Shell Networks
+
 - **Pattern**: Multi-level account hierarchies for fund movement
 - **Logic**: Centrality analysis and connected component detection
 - **Indicators**: Betweenness centrality, transaction volume anomalies
@@ -87,11 +97,13 @@ Each detected pattern receives a risk score (0-100) based on:
 ## Setup & Run Instructions
 
 ### Prerequisites
+
 - Node.js 16+ and npm
 - Python 3.8+ with pip
 - Git
 
 ### Backend Setup
+
 ```bash
 cd backend
 pip install flask flask-cors pandas networkx matplotlib plotly numpy scikit-learn
@@ -99,6 +111,7 @@ python main.py
 ```
 
 ### Frontend Setup
+
 ```bash
 cd fronted
 npm install
@@ -106,13 +119,16 @@ npm start
 ```
 
 ### Usage
+
 1. Open http://localhost:3000 in your browser
 2. Upload a CSV file with transaction data
 3. Click "Analyze Transactions"
 4. View results in the interactive dashboard
 
 ### CSV Format Requirements
+
 Required columns:
+
 - `transaction_id`: Unique transaction identifier
 - `from_account`: Source account ID
 - `to_account`: Destination account ID
@@ -122,16 +138,19 @@ Required columns:
 ## Known Limitations
 
 ### Technical Constraints
+
 - **Memory Usage**: Large datasets (>100K transactions) may require optimization
 - **Real-time Processing**: Current implementation processes data in batches
 - **False Positives**: Some legitimate business patterns may trigger alerts
 
 ### Algorithm Limitations
+
 - **Historical Context**: Limited analysis of long-term account behavior
 - **External Data**: No integration with external risk databases
 - **Currency Effects**: Multi-currency transactions not fully normalized
 
 ### Performance Considerations
+
 - **Graph Layout**: Deterministic positioning may not scale to 10K+ nodes
 - **Browser Limits**: Large network visualizations may impact browser performance
 - **API Timeouts**: Complex analyses may exceed default timeout limits
@@ -145,16 +164,18 @@ Required columns:
 
 ---
 
-*This project demonstrates advanced graph analysis techniques for financial crime detection. For production deployment, additional security measures, performance optimization, and regulatory compliance would be required.*
-=======
+# _This project demonstrates advanced graph analysis techniques for financial crime detection. For production deployment, additional security measures, performance optimization, and regulatory compliance would be required._
+
 # Financial Forensics Engine
 
 **Live Demo**: [Start App](#) (Instructions to run locally below)
 
 ## Project Overview
+
 A web-based Financial Forensics Engine designed to detect money muling networks and fraudulent transaction patterns. The system processes transaction data (CSV) and exposes complex money laundering rings through graph analysis and visualization.
 
 ## Key Features
+
 - **Interactive Graph Visualization**: Visualizes account connections and suspicious flows.
 - **Fraud Ring Detection**:
   - **Cycles**: Detects circular money flow (A -> B -> C -> A).
@@ -164,6 +185,7 @@ A web-based Financial Forensics Engine designed to detect money muling networks 
 - **Privacy-First**: All processing happens client-side in the browser.
 
 ## Tech Stack
+
 - **Frontend**: React (Vite) + TypeScript
 - **Styling**: TailwindCSS + Framer Motion (Glassmorphism UI)
 - **Visualization**: `react-force-graph-2d`
@@ -171,16 +193,19 @@ A web-based Financial Forensics Engine designed to detect money muling networks 
 - **State Management**: Zustand
 
 ## System Architecture
+
 The application follows a client-side architecture for maximum performance and security:
+
 1. **Data Ingestion**: `PapaParse` reads CSV files into memory.
 2. **Graph Construction**: `GraphBuilder` converts flat transactions into an in-memory graph (Nodes & Links).
 3. **Pattern Detection**: `PatternDetector` runs algorithms:
-   - *Cycle Detection*: Depth-First Search (DFS) with depth limit 5. `O(V * D)`
-   - *Smurfing*: Degree centrality analysis. `O(V)`
-   - *Shell Analysis*: Connected component analysis on low-volume nodes.
+   - _Cycle Detection_: Depth-First Search (DFS) with depth limit 5. `O(V * D)`
+   - _Smurfing_: Degree centrality analysis. `O(V)`
+   - _Shell Analysis_: Connected component analysis on low-volume nodes.
 4. **Scoring**: `RiskScorer` aggregates findings into account-level risk scores.
 
 ## Installation & Setup
+
 1. Clone the repository:
    ```bash
    git clone <repository-url>
@@ -200,6 +225,7 @@ The application follows a client-side architecture for maximum performance and s
    ```
 
 ## Usage Instructions
+
 1. Open the application in your browser.
 2. Drag & drop a CSV file containing transaction data.
    - Required columns: `transaction_id`, `sender_id`, `receiver_id`, `amount`, `timestamp`.
@@ -209,7 +235,9 @@ The application follows a client-side architecture for maximum performance and s
    - **Export**: Click "Export JSON" to download the forensic report.
 
 ## Suspicion Score Methodology
+
 Scores are calculated based on pattern participation:
+
 - **Cycle Participation**: +90 points (High confidence of muling)
 - **Smurfing (Fan-in/Fan-out)**: +80 points
 - **Shell Chain**: +85 points
@@ -218,9 +246,11 @@ Scores are calculated based on pattern participation:
 Scores are capped at 100. Accounts involved in multiple patterns allow analysts to prioritize investigations.
 
 ## Known Limitations
+
 - **Browser Memory**: Extremely large datasets (>100k transactions) may cause UI lag as processing is client-side.
 - **Cycle Depth**: Limited to length 5 for performance reasons.
 
 ## Team
+
 - **Developer**: Antigravity (AI Agent)
->>>>>>> 41e90b8b6c6cd5739e204028ea807095e564fe40
+  > > > > > > > 41e90b8b6c6cd5739e204028ea807095e564fe40
