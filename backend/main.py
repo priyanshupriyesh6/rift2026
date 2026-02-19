@@ -20,9 +20,13 @@ CORS(app)  # Enable CORS for frontend communication
 # Helper function to wrap responses in standard ApiResponse format
 def api_response(data=None, error=None, status_code=200):
     """Wrap response in standard {success, data, error} format"""
+    print(f"\n[API_RESPONSE] Called with error={error}, status_code={status_code}")
     if error:
-        return jsonify({'success': False, 'error': error}), status_code
-    return jsonify({'success': True, 'data': data}), status_code
+        response = jsonify({'success': False, 'error': error}), status_code
+    else:
+        response = jsonify({'success': True, 'data': data}), status_code
+    print(f"[API_RESPONSE] Returning: {response[0].get_json()}")
+    return response
 
 # Global instances
 detector = MoneyMulingDetector()
