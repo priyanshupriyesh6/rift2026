@@ -40,3 +40,14 @@
 .read-the-docs {
   color: #888;
 }
+
+.insight-line {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 400;
+  margin: 0.5rem 0;
+}
+
+.insight-line.dark-insight {
+  color: #94a3b8;
+}

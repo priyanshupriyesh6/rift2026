@@ -23,15 +23,31 @@ class SuspiciousActivityScorer:
         }
 
     def score_circular_routing(self, cycle_data):
-        """Score circular fund routing patterns"""
+        """Score circular fund routing patterns - optimized for precision"""
         cycle_length = cycle_data['length']
         total_amount = cycle_data['total_amount']
         time_span_hours = cycle_data['time_span'].total_seconds() / 3600
 
-        # Normalize scores (higher scores = more suspicious)
-        length_score = min(cycle_length / 10, 1.0)  # Max at 10 nodes
-        amount_score = min(total_amount / 100000, 1.0)  # Max at $100k
-        time_score = 1 - min(time_span_hours / 24, 1.0)  # Shorter time = more suspicious
+        # More conservative scoring to reduce false positives
+        # Weight shorter cycles more heavily (3-4 nodes is most suspicious)
+        if cycle_length <= 4:
+            length_score = min((cycle_length - 2) / 3, 1.0)  # 3-4 nodes = moderate score
+        else:
+            length_score = min(cycle_length / 15, 1.0)  # Longer cycles = less suspicious
+        
+        # Amount score - smaller amounts are more suspicious (trying to stay under thresholds)
+        if total_amount < 50000:
+            amount_score = min((50000 - total_amount) / 50000 * 0.8, 0.8)
+        else:
+            amount_score = 0.3  # Large cycles unlikely to be fraud
+        
+        # Time score - very fast cycles are more suspicious
+        if time_span_hours < 1:
+            time_score = 0.9
+        elif time_span_hours < 24:
+            time_score = 0.6
+        else:
+            time_score = max(0, 1 - (time_span_hours / 168))  # Reduce over a week
 
         score = (
             length_score * self.weights['circular_routing']['cycle_length'] +
@@ -50,16 +66,29 @@ class SuspiciousActivityScorer:
         }
 
     def score_smurfing(self, smurfing_data):
-        """Score smurfing patterns"""
+        """Score smurfing patterns - optimized for precision"""
         total_amount = smurfing_data['total_amount']
         num_transactions = smurfing_data['num_transactions']
         suspicious_score = smurfing_data.get('suspicious_score', 0.5)
 
-        # Amount ratio (how much above normal threshold)
-        amount_ratio = min(total_amount / 50000, 1.0)  # Max at $50k
+        # More conservative thresholds for smurfing
+        # Only flag extreme cases to reduce false positives
+        
+        # Amount ratio - very high amounts needed to be flagged
+        if total_amount > 100000:
+            amount_ratio = min(total_amount / 200000, 1.0)  # Max at $200k
+        elif total_amount > 50000:
+            amount_ratio = 0.6
+        else:
+            amount_ratio = 0.3  # Lower amounts = less likely smurfing
 
-        # Frequency score (more transactions = more suspicious)
-        frequency_score = min(num_transactions / 20, 1.0)  # Max at 20 transactions
+        # Frequency score - many transactions in short window
+        if num_transactions >= 20:
+            frequency_score = min(num_transactions / 50, 1.0)  # Max at 50 transactions
+        elif num_transactions >= 10:
+            frequency_score = 0.6
+        else:
+            frequency_score = 0.3
 
         score = (
             amount_ratio * self.weights['smurfing']['amount_ratio'] +
@@ -78,19 +107,30 @@ class SuspiciousActivityScorer:
         }
 
     def score_shell_network(self, network_data):
-        """Score layered shell networks"""
+        """Score layered shell networks - optimized for precision"""
         network_size = network_data['size']
         avg_centrality = network_data.get('avg_centrality', 0.5)
         total_volume = network_data['total_volume']
 
-        # Network size score
-        size_score = min(network_size / 15, 1.0)  # Max at 15 accounts
+        # Network size score - only very small networks with high bypass activity
+        if network_size <= 5:
+            size_score = min(network_size / 5, 1.0)
+        else:
+            size_score = 0.4  # Larger networks likely legitimate
 
-        # Centrality score (higher centrality = more suspicious)
-        centrality_score = avg_centrality
+        # Centrality score - must be very high to be suspicious
+        if avg_centrality > 0.3:
+            centrality_score = min(avg_centrality * 1.5, 1.0)
+        else:
+            centrality_score = 0.2
 
-        # Volume anomaly (low volume for high centrality = suspicious)
-        volume_score = 1 - min(total_volume / 10000, 1.0)  # Lower volume = higher score
+        # Volume score - shell networks have VERY low volume relative to activity
+        if total_volume < 5000:
+            volume_score = 0.9  # Very low volume networks are suspicious
+        elif total_volume < 20000:
+            volume_score = 0.6
+        else:
+            volume_score = 0.2  # High volume networks likely legitimate
 
         score = (
             size_score * self.weights['shell_network']['network_size'] +
