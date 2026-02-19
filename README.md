@@ -14,6 +14,29 @@ This web-based application provides an end-to-end solution for detecting money m
 - **Interactive Visualization**: Real-time network visualization with fraud highlighting
 - **Risk Assessment**: Automated scoring and reporting of suspicious activities
 
+## Deployment on Render
+
+### Backend Deployment
+1. Create a new **Web Service** on Render
+2. Connect your GitHub repository
+3. Set the **Root Directory** to `backend`
+4. Set **Build Command** to `pip install -r requirements.txt`
+5. Set **Start Command** to `gunicorn --bind 0.0.0.0:$PORT main:app`
+6. Deploy the service
+
+### Frontend Deployment
+1. Create a new **Static Site** on Render
+2. Connect your GitHub repository
+3. Set the **Root Directory** to `frontend/client`
+4. Set **Build Command** to `npm run build`
+5. Set **Publish Directory** to `dist`
+6. Add environment variable: `VITE_API_URL` = `https://your-backend-service.onrender.com`
+7. Deploy the static site
+
+### Connecting Frontend to Backend
+- After deploying both services, update the frontend's `VITE_API_URL` environment variable with your backend's Render URL
+- Redeploy the frontend to apply the changes
+
 ## Architecture
 
 ### Frontend (React)
