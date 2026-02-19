@@ -74,7 +74,7 @@ try {
     # Create test CSV
     $csvPath = "test_transactions.csv"
     $csvContent = @"
-transaction_id,from_account,to_account,amount,timestamp
+transaction_id,sender_id,receiver_id,amount,timestamp
 TXN_0001,ACC_001,ACC_002,1000.00,2026-02-01 10:00:00
 TXN_0002,ACC_002,ACC_003,950.00,2026-02-01 10:05:00
 TXN_0003,ACC_003,ACC_001,900.00,2026-02-01 10:10:00

@@ -61,14 +61,14 @@ This project implements three main detection patterns for identifying money muli
 
 ### Required CSV Columns
 - `transaction_id` - Unique transaction identifier
-- `from_account` - Source account ID
-- `to_account` - Destination account ID
+- `sender_id` - Source account ID
+- `receiver_id` - Destination account ID
 - `amount` - Transaction amount (numeric)
 - `timestamp` - Transaction timestamp (ISO format)
 
 ### Sample Data Structure
 ```
-transaction_id,from_account,to_account,amount,timestamp
+transaction_id,sender_id,receiver_id,amount,timestamp
 TXN_0001,ACC_001,ACC_002,1500.50,2024-01-15T10:30:00Z
 TXN_0002,ACC_003,ACC_001,2500.75,2024-01-15T11:15:00Z
 ```

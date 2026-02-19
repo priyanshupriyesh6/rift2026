@@ -1,6 +1,7 @@
 # Money Muling Detector - Setup Guide
 
 ## Project Structure
+
 ```
 rift2026/
 ├── backend/              # Python Flask API
@@ -21,6 +22,7 @@ rift2026/
 ```
 
 ## Prerequisites
+
 - Python 3.13+
 - Node.js 16+ and npm
 - Git
@@ -28,12 +30,14 @@ rift2026/
 ## Backend Setup
 
 ### 1. Install Python Dependencies
+
 ```bash
 cd rift2026/backend
 pip install -r requirements.txt
 ```
 
 ### 2. Start Flask Server
+
 ```bash
 python main.py
 ```
@@ -41,6 +45,7 @@ python main.py
 The API will be available at `http://localhost:5000`
 
 #### API Endpoints
+
 - `GET /api/health` - Health check
 - `POST /api/upload-transactions` - Upload CSV file with transaction data
 - `POST /api/run-detection` - Run detection algorithms and return fraud rings
@@ -51,19 +56,22 @@ The API will be available at `http://localhost:5000`
 - `GET /api/sample-data` - Generate sample data for testing
 
 #### CSV Format (Required Columns)
+
 ```
-transaction_id,from_account,to_account,amount,timestamp
+transaction_id,sender_id,receiver_id,amount,timestamp
 TXN_0001,ACC_001,ACC_002,1000.00,2026-02-01 10:00:00
 ```
 
 ## Frontend Setup
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Start Development Server
+
 ```bash
 npm start
 ```
@@ -75,11 +83,13 @@ The backend proxy is configured to `http://localhost:5000`, so API calls work wi
 ## Features
 
 ### Detection Algorithms
+
 1. **Circular Fund Routing** - Detects money flowing in circles between accounts
 2. **Smurfing Patterns** - Identifies when large amounts are split into smaller transfers
 3. **Shell Network Detection** - Finds shell company networks with high centrality
 
 ### Output Features
+
 1. **Interactive Network Visualization** - See fraud ring nodes highlighted with distinct colors
 2. **Fraud Ring Summary Table** - View Ring ID, Pattern Type, Member Count, Risk Score
 3. **Suspicious Accounts Table** - See top accounts flagged with scores and patterns
@@ -98,16 +108,19 @@ The backend proxy is configured to `http://localhost:5000`, so API calls work wi
 ## Troubleshooting
 
 ### Backend Won't Start
+
 - Ensure Python 3.13+ is in PATH: `python --version`
 - Reinstall dependencies: `pip install -r requirements.txt --upgrade`
 - Check port 5000 is available: `netstat -ano | findstr :5000`
 
 ### Frontend Won't Connect to Backend
+
 - Ensure backend is running on `http://localhost:5000`
 - Check proxy setting in `package.json`: `"proxy": "http://localhost:5000"`
 - Browser console may show CORS errors if backend API is on different host
 
 ### Files Not Found or Import Errors
+
 - Run from correct directory: `cd backend` before `python main.py`
 - Ensure all `.py` files are in same `backend/` directory
 - For frontend: `npm install` must complete successfully
@@ -115,6 +128,7 @@ The backend proxy is configured to `http://localhost:5000`, so API calls work wi
 ## Testing
 
 ### Quick Test with Sample Data
+
 1. Start backend: `python main.py` (from backend folder)
 2. Start frontend: `npm start` (from root)
 3. Click "Use Sample Data" button

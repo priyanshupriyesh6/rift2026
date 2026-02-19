@@ -148,7 +148,7 @@ Check that upload works:
 
 ```powershell
 $csvPath = "test.csv"
-"transaction_id,from_account,to_account,amount,timestamp
+"transaction_id,sender_id,receiver_id,amount,timestamp
 TXN_001,ACC_A,ACC_B,1000,2026-02-01 10:00:00" | Out-File $csvPath -Encoding UTF8
 
 $form = @{ file = Get-Item -Path $csvPath }

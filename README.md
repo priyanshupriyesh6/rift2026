@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+# Money Muling Detection Engine
 
 # Money Muling Detection Engine
 
@@ -131,10 +131,10 @@ npm start
 Required columns:
 
 - `transaction_id`: Unique transaction identifier
-- `from_account`: Source account ID
-- `to_account`: Destination account ID
+- `sender_id`: Source account ID
+- `receiver_id`: Destination account ID
 - `amount`: Transaction amount (numeric)
-- `timestamp`: ISO format datetime string
+- `timestamp`: Datetime in format YYYY-MM-DD HH:MM:SS (strict)
 
 ## Known Limitations
 
@@ -201,12 +201,12 @@ The application follows a client-side architecture for maximum performance and s
 
 ---
 
-© 2026 BugbyteY. This project is provided for educational use only and is not intended for professional or production use.
-2. **Graph Construction**: `GraphBuilder` converts flat transactions into an in-memory graph (Nodes & Links).
-3. **Pattern Detection**: `PatternDetector` runs algorithms:
-   - _Cycle Detection_: Depth-First Search (DFS) with depth limit 5. `O(V * D)`
-   - _Smurfing_: Degree centrality analysis. `O(V)`
-   - _Shell Analysis_: Connected component analysis on low-volume nodes.
+© 2026 BugbyteY. This project is provided for educational use only and is not intended for professional or production use. 2. **Graph Construction**: `GraphBuilder` converts flat transactions into an in-memory graph (Nodes & Links). 3. **Pattern Detection**: `PatternDetector` runs algorithms:
+
+- _Cycle Detection_: Depth-First Search (DFS) with depth limit 5. `O(V * D)`
+- _Smurfing_: Degree centrality analysis. `O(V)`
+- _Shell Analysis_: Connected component analysis on low-volume nodes.
+
 4. **Scoring**: `RiskScorer` aggregates findings into account-level risk scores.
 
 ## Installation & Setup
