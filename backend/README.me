@@ -1,0 +1,134 @@
+# Money Muling Detector
+
+A comprehensive system for detecting money muling activities using advanced graph analysis and machine learning techniques.
+
+## Overview
+
+This project implements three main detection patterns for identifying money muling operations:
+
+1. **Circular Fund Routing** - Detects funds moving in circular patterns through multiple accounts
+2. **Smurfing Patterns** - Identifies large amounts being split into smaller transactions to avoid detection thresholds
+3. **Layered Shell Networks** - Finds complex networks of shell companies used to obscure fund flows
+
+## Features
+
+- **Graph-based Analysis**: Uses NetworkX for transaction network analysis
+- **Multiple Detection Algorithms**: Implements three distinct money muling detection patterns
+- **Risk Scoring**: Comprehensive scoring system for suspicious activities
+- **Interactive Visualizations**: Multiple colored charts and graphs using Plotly
+- **REST API**: Flask-based API for easy integration
+- **Real-time Processing**: Fast processing of large transaction datasets
+
+## Architecture
+
+### Backend Components
+
+- `detector.py` - Core detection algorithms for the three patterns
+- `scoring.py` - Risk assessment and scoring system
+- `graph_rules.py` - Graph analysis and visualization rules
+- `main.py` - Flask API server
+- `requirements.txt` - Python dependencies
+
+### Detection Patterns
+
+#### 1. Circular Fund Routing
+- Identifies cycles in transaction graphs
+- Analyzes cycle length, total amounts, and time spans
+- Flags suspicious circular money movements
+
+#### 2. Smurfing Patterns
+- Detects large amounts split into smaller transactions
+- Analyzes transaction frequency and amount distributions
+- Identifies attempts to avoid detection thresholds
+
+#### 3. Layered Shell Networks
+- Finds networks of accounts with high centrality but low legitimate activity
+- Uses graph theory to identify shell company structures
+- Analyzes network topology for suspicious patterns
+
+## API Endpoints
+
+- `GET /api/health` - Health check
+- `POST /api/upload-transactions` - Upload CSV transaction data
+- `POST /api/run-detection` - Run detection algorithms
+- `GET /api/graph-metrics` - Get network metrics
+- `GET /api/visualizations/network` - Network visualization
+- `GET /api/visualizations/risk-distribution` - Risk distribution chart
+- `GET /api/visualizations/transaction-flow` - Transaction flow analysis
+- `GET /api/sample-data` - Generate sample data for testing
+
+## Data Format
+
+### Required CSV Columns
+- `transaction_id` - Unique transaction identifier
+- `from_account` - Source account ID
+- `to_account` - Destination account ID
+- `amount` - Transaction amount (numeric)
+- `timestamp` - Transaction timestamp (ISO format)
+
+### Sample Data Structure
+```
+transaction_id,from_account,to_account,amount,timestamp
+TXN_0001,ACC_001,ACC_002,1500.50,2024-01-15T10:30:00Z
+TXN_0002,ACC_003,ACC_001,2500.75,2024-01-15T11:15:00Z
+```
+
+## Installation
+
+1. Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Start the API server:
+```bash
+python main.py
+```
+
+The API will be available at `http://localhost:5000`
+
+## Usage
+
+1. **Upload Data**: Use `/api/upload-transactions` to upload your transaction CSV
+2. **Run Detection**: Call `/api/run-detection` to analyze the data
+3. **View Results**: Use visualization endpoints to see charts and graphs
+4. **Generate Sample Data**: Use `/api/sample-data` for testing
+
+## Visualizations
+
+The system provides multiple interactive visualizations:
+
+- **Network Graph**: Shows transaction relationships with color-coded risk levels
+- **Risk Distribution**: Pie chart showing distribution of risk levels
+- **Transaction Flow**: Detailed flow analysis for detected patterns
+- **Graph Metrics**: Comprehensive network analysis metrics
+
+## Risk Levels
+
+- **MINIMAL**: Low suspicion activities
+- **LOW**: Minor suspicious patterns
+- **MEDIUM**: Moderate risk indicators
+- **HIGH**: Strong suspicious indicators
+- **CRITICAL**: High-confidence money muling detection
+
+## Technologies Used
+
+- **Python** - Core programming language
+- **Flask** - Web API framework
+- **NetworkX** - Graph analysis library
+- **Pandas** - Data processing
+- **Plotly** - Interactive visualizations
+- **NumPy** - Numerical computations
+- **Scikit-learn** - Machine learning utilities
+
+## Future Enhancements
+
+- Machine learning model integration for improved detection
+- Real-time streaming data processing
+- Advanced pattern recognition algorithms
+- Integration with external financial databases
+- Automated reporting and alerting systems
+
+## License
+
+This project is for educational and research purposes in financial crime detection.

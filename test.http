@@ -1,0 +1,54 @@
+### Health Check - Test if backend is running
+GET http://localhost:5000/api/health
+
+### Get Sample Data - Generates test transactions with fraud patterns
+GET http://localhost:5000/api/sample-data
+
+### Upload Sample Transactions - Use this sample CSV data
+POST http://localhost:5000/api/upload-transactions
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample.csv"
+Content-Type: text/csv
+
+transaction_id,from_account,to_account,amount,timestamp
+TXN_0001,ACC_001,ACC_002,1000.00,2026-02-01 10:00:00
+TXN_0002,ACC_002,ACC_003,950.00,2026-02-01 10:05:00
+TXN_0003,ACC_003,ACC_001,900.00,2026-02-01 10:10:00
+TXN_0004,ACC_004,ACC_005,1100.00,2026-02-01 11:00:00
+TXN_0005,ACC_005,ACC_006,1050.00,2026-02-01 11:05:00
+CIRC_0001,CIRC_001,CIRC_002,50000.00,2026-02-05 14:00:00
+CIRC_0002,CIRC_002,CIRC_003,45000.00,2026-02-05 14:30:00
+CIRC_0003,CIRC_003,CIRC_004,40000.00,2026-02-05 15:00:00
+CIRC_0004,CIRC_004,CIRC_005,35000.00,2026-02-05 15:30:00
+CIRC_0005,CIRC_005,CIRC_001,30000.00,2026-02-05 16:00:00
+SMURF_0001,SMURF_SRC,ACC_010,5000.00,2026-02-02 09:00:00
+SMURF_0002,SMURF_SRC,ACC_011,4800.00,2026-02-02 09:05:00
+SMURF_0003,SMURF_SRC,ACC_012,5200.00,2026-02-02 09:10:00
+SMURF_0004,SMURF_SRC,ACC_013,4900.00,2026-02-02 09:15:00
+SMURF_0005,SMURF_SRC,ACC_014,5100.00,2026-02-02 09:20:00
+SHELL_0001,SHELL_001,SHELL_002,15000.00,2026-02-10 10:00:00
+SHELL_0002,SHELL_002,SHELL_003,14000.00,2026-02-10 10:30:00
+SHELL_0003,SHELL_003,SHELL_004,13000.00,2026-02-10 11:00:00
+SHELL_0004,SHELL_004,SHELL_005,12000.00,2026-02-10 11:30:00
+SHELL_0005,SHELL_005,SHELL_006,11000.00,2026-02-10 12:00:00
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Run Detection - Execute all detection algorithms (must call upload first)
+POST http://localhost:5000/api/run-detection
+
+### Get Graph Metrics - Analyze transaction network structure
+GET http://localhost:5000/api/graph-metrics
+
+### Get Fraud Rings - List all detected fraud rings
+GET http://localhost:5000/api/fraud-rings
+
+### Get Network Visualization - Network graph with fraud ring highlighting
+GET http://localhost:5000/api/visualizations/network
+
+### Get Risk Distribution Chart - Risk level distribution visualization
+GET http://localhost:5000/api/visualizations/risk-distribution
+
+### Download Fraud Report - Export as JSON file
+GET http://localhost:5000/api/download-fraud-report
