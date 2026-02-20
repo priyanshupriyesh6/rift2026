@@ -15,8 +15,21 @@ from scoring import SuspiciousActivityScorer
 from graph_rules import TransactionGraphAnalyzer
 
 print("\n" + "="*60)
-print("MODULE MAIN.PY LOADED - timestamp:", datetime.now().isoformat())
-print("="*60 + "\n")
+# Set up logging to file
+import logging
+logging.basicConfig(
+    filename='backend.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filemode='w'  # Overwrite log file each run
+)
+def log(msg):
+    """Log message to both file and stdout"""
+    print(msg)
+    logging.info(msg)
+
+log(f"MODULE MAIN.PY LOADED - timestamp: {datetime.now().isoformat()}")
+log("="*60)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
