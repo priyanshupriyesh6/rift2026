@@ -4,7 +4,7 @@ import os
 os.environ['PANDAS_NO_CALAMINE'] = '1'
 import pandas as pd
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import traceback
 import time
 import io
@@ -22,9 +22,31 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
 # Helper function to wrap responses in standard ApiResponse format
+def make_serializable(obj):
+    """Convert non-JSON-serializable objects to strings or primitives"""
+    if isinstance(obj, dict):
+        return {k: make_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [make_serializable(item) for item in obj]
+    elif hasattr(obj, 'isoformat'):  # datetime and like objects
+        return obj.isoformat()
+    elif isinstance(obj, timedelta):  # pandas/python Timedelta
+        return str(obj)  # Convert to string like "0 days 00:10:00"
+    elif isinstance(obj, (np.integer, np.floating)):  # numpy types
+        return obj.item()  # Convert to native Python type
+    elif pd.isna(obj):  # NaN values
+        return None
+    else:
+        return obj
+
 def api_response(data=None, error=None, status_code=200):
     """Wrap response in standard {success, data, error} format"""
     print(f"\n[API_RESPONSE] Called with error={error}, status_code={status_code}")
+    
+    # Make data JSON serializable
+    if data is not None:
+        data = make_serializable(data)
+    
     if error:
         response = jsonify({'success': False, 'error': error}), status_code
     else:
