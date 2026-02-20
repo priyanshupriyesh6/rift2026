@@ -54,10 +54,8 @@ class MoneyMulingDetector:
 
                         if self.graph.has_edge(from_acc, to_acc):
                             edge_data = self.graph.get_edge_data(from_acc, to_acc)
-                            # Handle multiple edges
-                            if isinstance(edge_data, dict) and len(edge_data) > 0:
-                                # Take the first edge data for simplicity
-                                edge_data = list(edge_data.values())[0] if isinstance(edge_data, dict) else edge_data
+                            # edge_data is a dict of edge attributes for DiGraph
+                            if isinstance(edge_data, dict):
                                 cycle_edges.append((from_acc, to_acc, edge_data))
                                 total_amount += edge_data.get('amount', 0)
                                 timestamps.append(edge_data.get('timestamp'))
