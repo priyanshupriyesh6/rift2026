@@ -114,6 +114,12 @@ def upload_transactions():
 
         # Load data into detector (detector expects columns 'from_account' and 'to_account')
         detector.load_transactions(df)
+        
+        # Debug logging
+        print(f"[DEBUG] Detector loaded transactions: {detector.transactions is not None}")
+        print(f"[DEBUG] Detector rows: {len(detector.transactions) if detector.transactions is not None else 0}")
+        print(f"[DEBUG] Detector graph nodes: {detector.graph.number_of_nodes() if detector.graph else 0}")
+        print(f"[DEBUG] Detector graph edges: {detector.graph.number_of_edges() if detector.graph else 0}")
 
         # Update analyzer
         global analyzer
@@ -129,6 +135,8 @@ def upload_transactions():
             }
         }
         print(f"[UPLOAD] Loaded {len(df)} transactions, {response_data['num_accounts']} accounts")
+        import sys
+        sys.stdout.flush()
         return api_response(data=response_data, status_code=200)
 
     except Exception as e:
@@ -148,6 +156,12 @@ def run_detection():
         # Run detection
         detection_results = detector.run_full_detection()
         last_detection_results = detection_results
+        
+        # Debug logging
+        print(f"[DEBUG] Detection results keys: {detection_results.keys()}")
+        print(f"[DEBUG] Circular routing patterns: {len(detection_results.get('circular_routing', []))}")
+        print(f"[DEBUG] Smurfing patterns: {len(detection_results.get('smurfing', []))}")
+        print(f"[DEBUG] Shell networks: {len(detection_results.get('shell_networks', []))}")
 
         # Generate scoring report
         scoring_report = scorer.generate_overall_report(detection_results)
@@ -157,6 +171,8 @@ def run_detection():
         
         print(f"[DETECTION] Found {len(fraud_ring_output.get('fraud_rings', []))} fraud rings")
         print(f"[DETECTION] Found {len(fraud_ring_output.get('suspicious_accounts', []))} suspicious accounts")
+        import sys
+        sys.stdout.flush()
         
         # Update processing time
         processing_time = time.time() - processing_start_time
