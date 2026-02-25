@@ -32,7 +32,11 @@ log(f"MODULE MAIN.PY LOADED - timestamp: {datetime.now().isoformat()}")
 log("="*60)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend communication
+CORS(app, origins=["https://financail-forensic-engine.onrender.com", "http://localhost:5173", "http://localhost:3000"])
+
+# Configure Flask for better performance with large requests
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
+app.config['TIMEOUT'] = 600  # 10 minutes timeout
 
 # Helper function to wrap responses in standard ApiResponse format
 def make_serializable(obj):
@@ -76,8 +80,46 @@ processing_start_time = None
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+    """Health check endpoint with system resource info"""
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        health_data = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'system': {
+                'memory_percent': memory.percent,
+                'memory_available_gb': round(memory.available / (1024**3), 2),
+                'disk_percent': disk.percent,
+                'disk_available_gb': round(disk.free / (1024**3), 2)
+            },
+            'detector': {
+                'loaded': detector.transactions is not None,
+                'transactions': len(detector.transactions) if detector.transactions is not None else 0,
+                'accounts': detector.graph.number_of_nodes() if detector.graph else 0
+            }
+        }
+        
+        # Warn if system resources are low
+        if memory.percent > 90 or disk.percent > 90:
+            health_data['status'] = 'warning'
+            health_data['warnings'] = []
+            if memory.percent > 90:
+                health_data['warnings'].append('High memory usage')
+            if disk.percent > 90:
+                health_data['warnings'].append('Low disk space')
+        
+        return jsonify(health_data)
+        
+    except ImportError:
+        # Fallback if psutil not available
+        return jsonify({
+            'status': 'healthy', 
+            'timestamp': datetime.now().isoformat(),
+            'system': 'monitoring not available'
+        })
 
 @app.route('/api/upload-transactions', methods=['POST'])
 def upload_transactions():
@@ -91,39 +133,52 @@ def upload_transactions():
         if file.filename == '':
             return api_response(error='No file selected', status_code=400)
 
-        # Read CSV file
-        df = pd.read_csv(file)
-        print(f"[DEBUG] CSV columns: {list(df.columns)}")
-
-        # Validate required columns. Accept the new input spec with
-        # `sender_id` / `receiver_id` but support the older `from_account` / `to_account` as well.
-        expected_new = ['transaction_id', 'sender_id', 'receiver_id', 'amount', 'timestamp']
-        expected_old = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
-
-        if all(col in df.columns for col in expected_new):
-            print("[DEBUG] Found NEW headers - mapping to internal format")
-            # Map to internal column names used by detector
-            df = df.rename(columns={'sender_id': 'from_account', 'receiver_id': 'to_account'})
-        elif all(col in df.columns for col in expected_old):
-            print("[DEBUG] Found OLD headers - already in internal format")
-            # already in expected internal format
-            pass
-        else:
-            # Report which required columns are missing for the NEW spec
-            missing = [col for col in expected_new if col not in df.columns]
-            print(f"[DEBUG] Missing columns for new spec: {missing}")
-            return api_response(
-                error=f'Missing required columns for input spec: {missing}. Required columns: {expected_new}',
-                status_code=400
-            )
-
-        # Convert timestamp to datetime using strict format YYYY-MM-DD HH:MM:SS
-        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-        if df['timestamp'].isna().any():
-            return api_response(
-                error='One or more timestamps could not be parsed. Expected format: YYYY-MM-DD HH:MM:SS',
-                status_code=400
-            )
+        # Read CSV file in chunks to handle large files
+        chunks = []
+        chunk_size = 10000  # Process in chunks of 10k rows
+        
+        try:
+            # First, try to read just the header to validate columns
+            header_df = pd.read_csv(file, nrows=0)
+            file.seek(0)  # Reset file pointer
+            
+            if all(col in header_df.columns for col in expected_new):
+                print("[DEBUG] Found NEW headers - mapping to internal format")
+                column_mapping = {'sender_id': 'from_account', 'receiver_id': 'to_account'}
+            elif all(col in header_df.columns for col in expected_old):
+                print("[DEBUG] Found OLD headers - already in internal format")
+                column_mapping = {}
+            else:
+                missing = [col for col in expected_new if col not in header_df.columns]
+                return api_response(
+                    error=f'Missing required columns: {missing}. Required: {expected_new}',
+                    status_code=400
+                )
+            
+            # Read in chunks
+            for chunk in pd.read_csv(file, chunksize=chunk_size):
+                if column_mapping:
+                    chunk = chunk.rename(columns=column_mapping)
+                
+                # Validate timestamp format for this chunk
+                chunk['timestamp'] = pd.to_datetime(chunk['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+                if chunk['timestamp'].isna().any():
+                    return api_response(
+                        error='Invalid timestamp format in data. Expected: YYYY-MM-DD HH:MM:SS',
+                        status_code=400
+                    )
+                
+                chunks.append(chunk)
+                print(f"[UPLOAD] Processed chunk with {len(chunk)} rows")
+            
+            # Concatenate all chunks
+            df = pd.concat(chunks, ignore_index=True)
+            print(f"[UPLOAD] Total rows loaded: {len(df)}")
+            
+        except pd.errors.EmptyDataError:
+            return api_response(error='CSV file is empty', status_code=400)
+        except Exception as e:
+            return api_response(error=f'Error reading CSV: {str(e)}', status_code=400)
 
         # Load data into detector (detector expects columns 'from_account' and 'to_account')
         detector.load_transactions(df)
@@ -157,7 +212,7 @@ def upload_transactions():
 
 @app.route('/api/run-detection', methods=['POST'])
 def run_detection():
-    """Run money muling detection algorithms"""
+    """Run money muling detection algorithms with timeout"""
     try:
         global last_detection_results, processing_start_time
 
@@ -165,10 +220,48 @@ def run_detection():
             return api_response(error='No transaction data loaded. Please upload data first.', status_code=400)
 
         processing_start_time = time.time()
-
-        # Run detection
-        detection_results = detector.run_full_detection()
-        last_detection_results = detection_results
+        
+        # Check data size and warn for large datasets
+        num_transactions = len(detector.transactions)
+        num_accounts = detector.graph.number_of_nodes() if detector.graph else 0
+        
+        print(f"[DETECTION] Starting detection on {num_transactions} transactions, {num_accounts} accounts")
+        
+        if num_transactions > 100000:
+            print("[DETECTION] Large dataset detected - using optimized processing")
+        
+        # Set timeout based on data size
+        timeout_seconds = min(600, max(60, num_transactions // 1000))  # 1-10 minutes based on size
+        
+        try:
+            # Run detection with timeout
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Detection timed out")
+            
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout_seconds)
+            
+            try:
+                # Run detection
+                detection_results = detector.run_full_detection()
+                last_detection_results = detection_results
+                
+                signal.alarm(0)  # Cancel timeout
+                
+            except TimeoutError:
+                print(f"[DETECTION] Processing timed out after {timeout_seconds}s")
+                return api_response(
+                    error=f'Processing timed out after {timeout_seconds} seconds. Dataset may be too large for current resources.',
+                    status_code=408
+                )
+            
+        except ImportError:
+            # Fallback for systems without signal support (like Windows)
+            print("[DETECTION] Using fallback timeout handling")
+            detection_results = detector.run_full_detection()
+            last_detection_results = detection_results
         
         # Debug logging
         print(f"[DEBUG] Detection results keys: {detection_results.keys()}")
@@ -184,19 +277,32 @@ def run_detection():
         
         print(f"[DETECTION] Found {len(fraud_ring_output.get('fraud_rings', []))} fraud rings")
         print(f"[DETECTION] Found {len(fraud_ring_output.get('suspicious_accounts', []))} suspicious accounts")
-        import sys
-        sys.stdout.flush()
         
         # Update processing time
         processing_time = time.time() - processing_start_time
         fraud_ring_output['summary']['processing_time_seconds'] = round(processing_time, 2)
+        
+        print(f"[DETECTION] Processing completed in {processing_time:.2f} seconds")
+        import sys
+        sys.stdout.flush()
 
         return api_response(data={
             'detection_results': detection_results,
             'scoring_report': scoring_report,
             'fraud_ring_output': fraud_ring_output,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'processing_stats': {
+                'transactions_processed': num_transactions,
+                'accounts_analyzed': num_accounts,
+                'processing_time_seconds': round(processing_time, 2),
+                'timeout_limit': timeout_seconds
+            }
         })
+
+    except Exception as e:
+        processing_time = time.time() - processing_start_time if 'processing_start_time' in globals() else 0
+        print(f"[DETECTION] Error after {processing_time:.2f}s: {str(e)}")
+        return api_response(error=f'Processing failed: {str(e)}', status_code=500)
 
     except Exception as e:
         return api_response(error=str(e), status_code=500)

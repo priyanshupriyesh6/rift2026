@@ -4,6 +4,8 @@ from collections import defaultdict, deque
 import numpy as np
 from datetime import datetime, timedelta
 import uuid
+import time
+import random
 
 class MoneyMulingDetector:
     def __init__(self):
@@ -34,15 +36,39 @@ class MoneyMulingDetector:
                 transaction_id=row['transaction_id']
             )
 
-    def detect_circular_fund_routing(self, max_cycle_length=10):
-        """Detect circular fund routing patterns"""
+    def detect_circular_fund_routing(self, max_cycle_length=8, max_cycles=1000, timeout_seconds=300):
+        """Detect circular fund routing patterns with scalability limits"""
         cycles = []
+        start_time = time.time()
+        
         try:
-            # Find all simple cycles
-            all_cycles = list(nx.simple_cycles(self.graph))
-
-            for cycle in all_cycles:
-                if len(cycle) <= max_cycle_length:
+            # For large graphs, limit cycle detection to avoid exponential time
+            if self.graph.number_of_nodes() > 10000 or self.graph.number_of_edges() > 50000:
+                print(f"[DETECTOR] Large graph detected ({self.graph.number_of_nodes()} nodes, {self.graph.number_of_edges()} edges)")
+                print("[DETECTOR] Using optimized cycle detection for large datasets")
+                
+                # Use a more efficient approach for large graphs
+                cycles = self._detect_cycles_efficiently(max_cycle_length, max_cycles, timeout_seconds)
+            else:
+                # For smaller graphs, use the original approach
+                all_cycles = list(nx.simple_cycles(self.graph))
+                
+                for cycle in all_cycles[:max_cycles]:  # Limit number of cycles
+                    if len(cycle) <= max_cycle_length:
+                        if time.time() - start_time > timeout_seconds:
+                            print(f"[DETECTOR] Cycle detection timed out after {timeout_seconds}s")
+                            break
+                            
+                        cycle_data = self._analyze_cycle(cycle)
+                        if cycle_data:
+                            cycles.append(cycle_data)
+                            
+            print(f"[DETECTOR] Found {len(cycles)} circular routing patterns")
+            return cycles
+            
+        except Exception as e:
+            print(f"[DETECTOR] Error in cycle detection: {e}")
+            return cycles
                     # Calculate cycle properties
                     cycle_edges = []
                     total_amount = 0
@@ -192,6 +218,104 @@ class MoneyMulingDetector:
             print(f"Error detecting shell networks: {e}")
 
         return shell_networks
+
+    def _detect_cycles_efficiently(self, max_cycle_length=8, max_cycles=1000, timeout_seconds=300):
+        """Efficient cycle detection for large graphs"""
+        cycles = []
+        start_time = time.time()
+        
+        # Sample high-degree nodes for cycle detection
+        degrees = dict(self.graph.degree())
+        high_degree_nodes = sorted(degrees.keys(), key=lambda x: degrees[x], reverse=True)[:min(1000, len(degrees))]
+        
+        print(f"[DETECTOR] Sampling from {len(high_degree_nodes)} high-degree nodes")
+        
+        for node in high_degree_nodes[:100]:  # Limit starting nodes
+            if time.time() - start_time > timeout_seconds:
+                break
+                
+            try:
+                # Find cycles starting from this node
+                node_cycles = self._find_cycles_from_node(node, max_cycle_length, max_cycles // 100)
+                for cycle in node_cycles:
+                    if len(cycles) >= max_cycles:
+                        break
+                    cycle_data = self._analyze_cycle(cycle)
+                    if cycle_data:
+                        cycles.append(cycle_data)
+            except:
+                continue
+                
+        return cycles
+    
+    def _find_cycles_from_node(self, start_node, max_length=8, max_cycles=10):
+        """Find cycles starting from a specific node using DFS"""
+        cycles = []
+        visited = set()
+        path = []
+        
+        def dfs(current, depth=0):
+            if depth > max_length:
+                return
+            if len(cycles) >= max_cycles:
+                return
+                
+            path.append(current)
+            visited.add(current)
+            
+            for neighbor in self.graph.successors(current):
+                if neighbor == start_node and len(path) > 2:
+                    # Found a cycle
+                    cycles.append(path + [start_node])
+                elif neighbor not in visited:
+                    dfs(neighbor, depth + 1)
+                    
+            path.pop()
+            visited.remove(current)
+        
+        dfs(start_node)
+        return cycles
+    
+    def _analyze_cycle(self, cycle):
+        """Analyze a single cycle and return cycle data"""
+        try:
+            cycle_edges = []
+            total_amount = 0
+            timestamps = []
+
+            for i in range(len(cycle)):
+                from_acc = cycle[i]
+                to_acc = cycle[(i + 1) % len(cycle)]
+
+                if self.graph.has_edge(from_acc, to_acc):
+                    edge_data = self.graph.get_edge_data(from_acc, to_acc)
+                    if isinstance(edge_data, dict):
+                        cycle_edges.append((from_acc, to_acc, edge_data))
+                        total_amount += edge_data.get('amount', 0)
+                        timestamps.append(edge_data.get('timestamp'))
+
+            if cycle_edges:
+                time_span = max(timestamps) - min(timestamps) if len(timestamps) > 1 else timedelta(0)
+                
+                ring_id = f"RING_{len(self.rings):03d}"
+                self.rings[ring_id] = {
+                    'type': 'circular_routing',
+                    'members': cycle,
+                    'edges': cycle_edges,
+                    'total_amount': total_amount
+                }
+
+                return {
+                    'cycle': cycle,
+                    'length': len(cycle),
+                    'total_amount': total_amount,
+                    'time_span_seconds': time_span.total_seconds(),
+                    'ring_id': ring_id
+                }
+        except Exception as e:
+            print(f"[DETECTOR] Error analyzing cycle: {e}")
+            
+        return None
 
     def _calculate_smurfing_score(self, transaction_group, threshold):
         """Calculate suspicious score for smurfing pattern"""
