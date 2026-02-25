@@ -234,38 +234,9 @@ def run_detection():
         if num_transactions > 100000:
             print("[DETECTION] Large dataset detected - using optimized processing")
         
-        # Set timeout based on data size
-        timeout_seconds = min(600, max(60, num_transactions // 1000))  # 1-10 minutes based on size
-        
-        try:
-            # Run detection with timeout
-            import signal
-            
-            def timeout_handler(signum, frame):
-                raise TimeoutError("Detection timed out")
-            
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout_seconds)
-            
-            try:
-                # Run detection
-                detection_results = detector.run_full_detection()
-                last_detection_results = detection_results
-                
-                signal.alarm(0)  # Cancel timeout
-                
-            except TimeoutError:
-                print(f"[DETECTION] Processing timed out after {timeout_seconds}s")
-                return api_response(
-                    error=f'Processing timed out after {timeout_seconds} seconds. Dataset may be too large for current resources.',
-                    status_code=408
-                )
-            
-        except ImportError:
-            # Fallback for systems without signal support (like Windows)
-            print("[DETECTION] Using fallback timeout handling")
-            detection_results = detector.run_full_detection()
-            last_detection_results = detection_results
+        # Run detection (algorithms have built-in limits to prevent infinite processing)
+        detection_results = detector.run_full_detection()
+        last_detection_results = detection_results
         
         # Debug logging
         print(f"[DEBUG] Detection results keys: {detection_results.keys()}")
@@ -298,8 +269,7 @@ def run_detection():
             'processing_stats': {
                 'transactions_processed': num_transactions,
                 'accounts_analyzed': num_accounts,
-                'processing_time_seconds': round(processing_time, 2),
-                'timeout_limit': timeout_seconds
+                'processing_time_seconds': round(processing_time, 2)
             }
         })
 
