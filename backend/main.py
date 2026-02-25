@@ -137,6 +137,10 @@ def upload_transactions():
         chunks = []
         chunk_size = 10000  # Process in chunks of 10k rows
         
+        # Define expected column formats
+        expected_new = ['transaction_id', 'sender_id', 'receiver_id', 'amount', 'timestamp']
+        expected_old = ['transaction_id', 'from_account', 'to_account', 'amount', 'timestamp']
+        
         try:
             # First, try to read just the header to validate columns
             header_df = pd.read_csv(file, nrows=0)
