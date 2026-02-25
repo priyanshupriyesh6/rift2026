@@ -18,19 +18,19 @@ export interface UploadResponse {
 }
 
 export interface DetectionResponse {
-  detection_results: any;
-  scoring_report: any;
-  fraud_ring_output: any;
+  detection_results: Record<string, unknown>;
+  scoring_report: Record<string, unknown>;
+  fraud_ring_output: Record<string, unknown>;
   timestamp: string;
 }
 
 export interface GraphMetricsResponse {
-  metrics: any;
+  metrics: Record<string, unknown>;
   timestamp: string;
 }
 
 export interface NetworkVisualizationResponse {
-  plotly_data: any;
+  plotly_data: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -54,7 +54,7 @@ class ApiService {
       const headers: Record<string, string> = {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...((options && options.headers) || {}),
-      } as any;
+      };
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,

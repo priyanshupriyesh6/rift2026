@@ -39,6 +39,7 @@ export const UploadZone: React.FC = () => {
                     onChange={handleChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     disabled={isAnalyzing}
+                    title="Upload CSV file"
                 />
 
                 <div className="flex flex-col items-center gap-4">

@@ -8,6 +8,8 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
-    }
+    },
+    "strict": true,
+    "forceConsistentCasingInFileNames": true
   }
 }

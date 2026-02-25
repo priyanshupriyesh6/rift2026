@@ -52,14 +52,14 @@ export const useAppStore = create<AppState>((set) => ({
             }
 
             // Transform backend data to match frontend types
-            const fraudRings = fraudRingsResponse.data!.fraud_rings.map((ring: any) => ({
+            const fraudRings = fraudRingsResponse.data!.fraud_rings.map((ring) => ({
                 ringId: ring.ring_id,
                 memberAccounts: ring.member_accounts,
-                patternType: ring.pattern_type as any,
+                patternType: ring.pattern_type as 'cycle' | 'fan_in' | 'fan_out' | 'shell' | 'mixed',
                 riskScore: ring.risk_score
             }));
 
-            const suspiciousAccounts = detectionResponse.data!.fraud_ring_output.suspicious_accounts.map((acc: any) => ({
+            const suspiciousAccounts = (detectionResponse.data!.fraud_ring_output as { suspicious_accounts: SuspiciousAccount[] }).suspicious_accounts.map((acc) => ({
                 account_id: acc.account_id,
                 suspicion_score: acc.suspicion_score,
                 detected_patterns: acc.detected_patterns,
@@ -97,8 +97,8 @@ export const useAppStore = create<AppState>((set) => ({
                 analysisResult
             });
 
-        } catch (error: any) {
-            set({ isAnalyzing: false, error: error.message });
+        } catch (error: unknown) {
+            set({ isAnalyzing: false, error: error instanceof Error ? error.message : 'An unknown error occurred' });
         }
     }
 }));

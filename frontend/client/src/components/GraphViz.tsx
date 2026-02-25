@@ -3,11 +3,16 @@ import ForceGraph2D from 'react-force-graph-2d';
 import { useAppStore } from '@/store/index.ts';
 import { useResizeObserver } from '@/hooks/useResizeObserver.ts';
 
+interface GraphMethods {
+  centerAt(x: number, y: number, durationMs?: number): void;
+  zoom(scale?: number, durationMs?: number): void;
+}
+
 export const GraphViz: React.FC = () => {
     const { graphData, analysisResult } = useAppStore();
     const containerRef = useRef<HTMLDivElement>(null);
     const { width, height } = useResizeObserver(containerRef);
-    const graphRef = useRef<any>(null);
+    const graphRef = useRef<GraphMethods>(null);
 
     // Prepare data with visualization properties
     const data = useMemo(() => {
